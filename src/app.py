@@ -47,7 +47,7 @@ def handle_hello():
 
 #   get all users AND get one user by id
 
-@app.route('/user', methods=['GET'])
+@app.route('/users', methods=['GET'])
 def get_users():
     users = User.query.all()
     users_list = [user.serialize() for user in users]
@@ -107,19 +107,7 @@ def create_favorite():
     if not pokemon_id and not item_id:
         return jsonify({"error": "Debes enviar al menos un pokemon_id o item_id"}), 400
 
-    # favorito segun el tipo
-    if pokemon_id:
-        favorite = Favorites(
-            user_id=user_id,
-            object_id=pokemon_id,
-            object_type=FavoriteType.POKEMON
-        )
-    elif item_id:
-        favorite = Favorites(
-            user_id=user_id,
-            object_id=item_id,
-            object_type=FavoriteType.ITEM
-        )
+    favorite = Favorites(user_id=user_id, pokemon_id=pokemon_id, item_id=item_id)
 
     db.session.add(favorite)
     db.session.commit()

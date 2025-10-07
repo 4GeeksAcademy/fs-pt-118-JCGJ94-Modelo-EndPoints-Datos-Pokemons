@@ -2,7 +2,6 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import String, Integer, Boolean, Text, DateTime,Enum as SQLAEnum,ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column,relationship
 from datetime import datetime, date
-from enum import Enum
 
 db = SQLAlchemy()
 
@@ -36,7 +35,7 @@ class Pokemon(db.Model):
     generation: Mapped[str] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
 
-    favorites: Mapped[list["Favorites"]] = relationship(back_populates="pokemons", uselist=True)
+    favorites: Mapped[list["Favorites"]] = relationship(back_populates="pokemon", uselist=True)
 
     def serialize(self):
         return {
@@ -57,7 +56,7 @@ class Item(db.Model):
     category: Mapped[str] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
 
-    favorites: Mapped[list["Favorites"]] = relationship(back_populates="items", uselist=True)
+    favorites: Mapped[list["Favorites"]] = relationship(back_populates="item", uselist=True)
 
     def serialize(self):
         return {
@@ -69,29 +68,26 @@ class Item(db.Model):
             "favorites": [favorite.id for favorite in self.favorites] if self.favorites else []
         }
 
-
-class FavoriteType(Enum):
-    POKEMON = "pokemon"
-    ITEM = "item"
-
 class Favorites(db.Model):
     __tablename__ = 'favorites'
     id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('user.id'), nullable=False)
+    pokemon_id: Mapped[int] = mapped_column(ForeignKey('pokemon.id'), nullable=True)
+    item_id: Mapped[int] = mapped_column(ForeignKey('item.id'), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    user_id: Mapped[int] = mapped_column(ForeignKey('user.id'), nullable=False)
-    object_id: Mapped[int] = mapped_column(nullable=False)  # aqui podemos tener de favorito tanto pokemon_id o un item_id
-    object_type: Mapped[FavoriteType] = mapped_column(SQLAEnum(FavoriteType, name="favoritetype", create_type=True), nullable=False)
-
-
     user: Mapped["User"] = relationship(back_populates="favorites")
+    pokemon: Mapped["Pokemon"] = relationship(back_populates="favorites")
+    item: Mapped["Item"] = relationship(back_populates="favorites")
 
     def serialize(self):
         return {
             "id": self.id,
             "user_id": self.user_id,
-            "object_type": self.object_type.value,  
-            "object_id": self.object_id,
+            "pokemon_id": self.pokemon_id,
+            "item_id": self.item_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+            "pokemon_name": self.pokemon.name if self.pokemon else None,
+            "item_name": self.item.name if self.item else None
         }
 
